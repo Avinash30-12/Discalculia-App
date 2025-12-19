@@ -13,7 +13,7 @@ export default function Home(){
           </div>
         </div>
         <div className="flex-1 p-4">
-          <img src="/public/images/kids-illustration.png" alt="Kids illustration" className="w-full max-w-sm mx-auto rounded-xl" />
+          <img src="/images/kids-illustration.png" alt="Kids illustration" className="w-full max-w-sm mx-auto rounded-xl" />
         </div>
       </div>
     </div>
