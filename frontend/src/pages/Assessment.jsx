@@ -30,11 +30,12 @@ export default function Assessment() {
 
   useEffect(() => {
     if (!current) return
+
     clearInterval(timerRef.current)
     setSecondsLeft(TIMER_SECONDS)
 
     timerRef.current = setInterval(() => {
-      setSecondsLeft(s => {
+      setSecondsLeft((s) => {
         if (s <= 1) {
           clearInterval(timerRef.current)
           handleTimeout()
@@ -57,20 +58,21 @@ export default function Assessment() {
   }
 
   const selectInternal = (opt, responseTime) => {
-    setAnswers(a => [...a, { selected: opt, responseTime }])
+    setAnswers((a) => [...a, { selected: opt, responseTime }])
 
     const wasCorrect = opt !== null && String(opt) === String(current.correctAnswer)
     const quick = responseTime < 5000
-    let nextDifficulty = Math.min(
+
+    const nextDifficulty = Math.min(
       5,
       Math.max(1, current.difficulty + (wasCorrect && quick ? 1 : 0) - (!wasCorrect ? 1 : 0))
     )
 
     if (questionIndex < TOTAL_QUESTIONS - 1) {
       const nextQ = generateAdaptiveQuestion(nextDifficulty, questionIndex + 1)
-      setQuestions(q => [...q, nextQ])
+      setQuestions((q) => [...q, nextQ])
       setCurrent(nextQ)
-      setQuestionIndex(i => i + 1)
+      setQuestionIndex((i) => i + 1)
       startTsRef.current = Date.now()
     } else {
       submitAssessment()
@@ -80,17 +82,17 @@ export default function Assessment() {
   const submitAssessment = async () => {
     setSubmitting(true)
     try {
-      const questionsPayload = questions.map(q => ({
+      const questionsPayload = questions.map((q) => ({
         questionType: q.questionType,
         questionText: q.questionText,
         options: q.options,
         correctAnswer: q.correctAnswer,
-        difficulty: q.difficulty
+        difficulty: q.difficulty,
       }))
 
       const startRes = await client.post('/api/assessments/start', {
         userId: getUser()?._id,
-        questions: questionsPayload
+        questions: questionsPayload,
       })
 
       const assessmentId = startRes.data._id
@@ -99,37 +101,47 @@ export default function Assessment() {
         questionId: startRes.data.questions[idx]?._id,
         selectedAnswer: a.selected,
         responseTime: a.responseTime,
-        attempts: 1
+        attempts: 1,
       }))
 
       await client.post('/api/assessments/submit', {
         assessmentId,
-        answers: mappedAnswers
+        answers: mappedAnswers,
       })
 
       navigate('/results', { replace: true })
     } catch (err) {
-      const serverMsg = err?.response?.data?.message
-      setError(serverMsg || 'Failed to submit assessment')
+      setError(err?.response?.data?.message || 'Failed to submit assessment')
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="max-w-3xl w-full kid-card">
-        <div className="flex justify-between mb-3">
-          <h2 className="text-2xl font-bold">Assessment</h2>
-          <span>Q {questionIndex + 1}/{TOTAL_QUESTIONS}</span>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+      <div className="max-w-3xl w-full bg-white rounded-2xl p-5 shadow-sm">
+
+        {/* Header */}
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-bold text-black">Assessment</h2>
+          <span className="text-sm text-gray-700">
+            Q {questionIndex + 1}/{TOTAL_QUESTIONS}
+          </span>
         </div>
 
         {error && <ErrorBanner message={error} />}
 
-        <div className="mb-3 text-lg">{current?.questionText}</div>
-        <div className="text-sm mb-3">Difficulty: {current?.difficulty} | ⏱ {secondsLeft}s</div>
+        {/* Question */}
+        <div className="mb-3 text-lg font-medium text-black">
+          {current?.questionText}
+        </div>
 
-        {/* DOT QUESTIONS - render if dots count present */}
+        {/* Meta */}
+        <div className="text-sm mb-4 text-gray-700">
+          Difficulty: {current?.difficulty} | ⏱ {secondsLeft}s
+        </div>
+
+        {/* DOT QUESTIONS */}
         {current?.dots && (
           <div className="flex gap-2 flex-wrap mb-4">
             {Array.from({ length: current.dots }).map((_, i) => (
@@ -138,7 +150,7 @@ export default function Assessment() {
           </div>
         )}
 
-        {/* SHAPE & COLOR - render if shapes array present */}
+        {/* SHAPES */}
         {current?.shapes && (
           <div className="flex gap-4 mb-4">
             {current.shapes.map((s, i) => (
@@ -150,22 +162,29 @@ export default function Assessment() {
           </div>
         )}
 
-        {/* IMAGE QUESTION - render if image available */}
+        {/* IMAGE */}
         {current?.image && (
-          (typeof current.image === 'string' && current.image.length > 0) ? (
-            <img src={current.image} alt={current.questionText || 'question image'} className="w-40 mb-4 rounded-xl" />
-          ) : (
-            <div className="w-40 h-24 mb-4 rounded-xl bg-gray-200 flex items-center justify-center text-gray-500">No image</div>
-          )
+          <img
+            src={current.image}
+            alt="question"
+            className="w-40 mb-4 rounded-xl border"
+          />
         )}
 
+        {/* OPTIONS */}
         <div className="grid grid-cols-2 gap-3">
           {(current?.options || []).map((opt, i) => (
             <button
               key={i}
               onClick={() => select(opt.text)}
               disabled={submitting}
-              className="py-3 px-4 rounded-xl bg-primary/10 hover:border-primary border-2"
+              className="
+                py-3 px-4 rounded-xl
+                bg-white border-2 border-gray-300
+                text-black font-medium
+                hover:border-primary hover:bg-primary/10
+                transition
+              "
             >
               {submitting ? <LoadingSpinner size={18} /> : opt.text}
             </button>
@@ -185,87 +204,77 @@ function generateAdaptiveQuestion(difficulty, idx) {
     'comparison',
     'missing',
     'image_based',
-    'shape_color'
+    'shape_color',
   ]
   const type = types[randInt(0, types.length - 1)]
 
   switch (type) {
-    case 'count_dots': return generateCountDots(difficulty, idx)
-    case 'comparison': return generateComparison(difficulty, idx)
-    case 'missing': return generateMissing(difficulty, idx)
-    case 'image_based': return generateImageQuestion(difficulty, idx)
-    case 'shape_color': return generateShapeColor(difficulty, idx)
-    default: return generateArithmetic(difficulty, idx)
+    case 'count_dots':
+      return generateCountDots(difficulty, idx)
+    case 'comparison':
+      return generateComparison(difficulty, idx)
+    case 'missing':
+      return generateMissing(difficulty, idx)
+    case 'image_based':
+      return generateImageQuestion(difficulty, idx)
+    case 'shape_color':
+      return generateShapeColor(difficulty, idx)
+    default:
+      return generateArithmetic(difficulty, idx)
   }
 }
 
 function generateArithmetic(difficulty, idx) {
   const a = randInt(1, difficulty * 5)
   const b = randInt(1, difficulty * 5)
-  const correct = a + b
-  return build(` ${a} + ${b} = ?`, correct, difficulty, idx)
+  return build(`${a} + ${b} = ?`, a + b, difficulty, idx)
 }
 
 function generateCountDots(difficulty, idx) {
   const dots = randInt(3, difficulty * 4)
-  return {
-    ...build('How many dots?', dots, difficulty, idx),
-    // normalize to backend enum
-    questionType: 'number_sense',
-    dots
-  }
+  return { ...build('How many dots?', dots, difficulty, idx), questionType: 'number_sense', dots }
 }
 
 function generateComparison(difficulty, idx) {
   const a = randInt(1, difficulty * 10)
   const b = randInt(1, difficulty * 10)
   const correct = a > b ? '>' : '<'
-  // comparison questions map to number sense domain
   return { ...build(`${a} ? ${b}`, correct, difficulty, idx, ['>', '<']), questionType: 'number_sense' }
 }
 
 function generateMissing(difficulty, idx) {
   const start = randInt(1, 10)
   const step = randInt(1, difficulty + 1)
-  const correct = start + step * 2
-  // sequence/missing number -> number sense
-  return { ...build(`Find missing: ${start}, ${start + step}, ?, ${start + step * 3}`, correct, difficulty, idx), questionType: 'number_sense' }
+  return {
+    ...build(`Find missing: ${start}, ${start + step}, ?, ${start + step * 3}`, start + step * 2, difficulty, idx),
+    questionType: 'number_sense',
+  }
 }
 
 function generateImageQuestion(difficulty, idx) {
-  const correct = 'Apple'
   return {
     localId: `img-${idx}`,
-    // visual recognition -> spatial domain
     questionType: 'spatial',
     questionText: 'Which fruit is this?',
-    // Use one of the public images under /public/images
-    image: `/images/${['apple','banana','orange','grapes'][idx % 4]}.svg`,
-    options: [
-      { text: 'Apple', isCorrect: true },
-      { text: 'Banana' },
-      { text: 'Orange' },
-      { text: 'Grapes' }
-    ],
-    correctAnswer: correct,
-    difficulty
+    image: `/images/${['apple', 'banana', 'orange', 'grapes'][idx % 4]}.svg`,
+    options: ['Apple', 'Banana', 'Orange', 'Grapes'].map((t) => ({ text: t })),
+    correctAnswer: 'Apple',
+    difficulty,
   }
 }
 
 function generateShapeColor(difficulty, idx) {
-  const correct = 'Red'
   return {
     localId: `shape-${idx}`,
-    // shapes/colors -> spatial reasoning
     questionType: 'spatial',
     questionText: 'What color are the shapes?',
     shapes: [
       { shape: 'rounded-full', color: 'bg-red-500' },
-      { shape: 'rounded-full', color: 'bg-red-500' }
+      { shape: 'rounded-full', color: 'bg-red-500' },
     ],
-    options: generateOptions(correct),
-    correctAnswer: correct,
-    difficulty
+    options: generateOptions('Red'),
+    correctAnswer: 'Red',
+    difficulty,
   }
 }
 
@@ -274,16 +283,16 @@ function build(text, correct, difficulty, idx, opts) {
     localId: `q-${idx}`,
     questionType: 'arithmetic',
     questionText: text,
-    options: opts ? opts.map(o => ({ text: o })) : generateOptions(correct),
+    options: opts ? opts.map((o) => ({ text: o })) : generateOptions(String(correct)),
     correctAnswer: String(correct),
-    difficulty
+    difficulty,
   }
 }
 
 function generateOptions(correct) {
   const set = new Set([correct])
-  while (set.size < 4) set.add(correct + randInt(-5, 5))
-  return [...set].map(v => ({ text: String(v) })).sort(() => Math.random() - 0.5)
+  while (set.size < 4) set.add(String(Number(correct) + randInt(-5, 5)))
+  return [...set].map((v) => ({ text: v })).sort(() => Math.random() - 0.5)
 }
 
 function randInt(min, max) {
