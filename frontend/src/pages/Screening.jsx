@@ -200,7 +200,7 @@ export default function Screening(){
                 <div className="mb-2 flex items-center gap-3">
                   <div className="text-xl flex-1 text-black">{questions[questionIndex]?.questionText}</div>
                   {questions[questionIndex]?.speechText && (
-                    <button onClick={() => playSpeech()} aria-label="Play audio" className="px-3 py-1 rounded-md border bg-white text-sm">Play</button>
+                    <button onClick={() => playSpeech()} aria-label="Play audio" className="px-3 py-1 rounded-md border bg-white text-sm text-black">Play</button>
                   )}
                 </div>
                 {questions[questionIndex]?.images && (
