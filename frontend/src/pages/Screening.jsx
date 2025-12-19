@@ -5,7 +5,6 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import { useNavigate } from 'react-router-dom'
 
-// Screening module implementing multiple short adaptive subtests
 export default function Screening(){
   const navigate = useNavigate()
   const SUBTEST_QUESTIONS = 6 // per domain
@@ -26,7 +25,6 @@ export default function Screening(){
     return ()=> clearInterval(timerRef.current)
   }, [])
 
-  // use backend questionType enum keys where required: 'number_sense', 'arithmetic', 'spatial', 'memory'
   const domainConfigs = {
     number_sense: { label: 'Number Sense', time: 12, generator: genNumberSense },
     arithmetic: { label: 'Arithmetic', time: 15, generator: genArithmetic },
@@ -39,14 +37,13 @@ export default function Screening(){
     setSubtype(null)
     setPhase('running')
     setQuestionIndex(0)
-  const q = domainConfigs[d].generator(1, 0)
+    const q = domainConfigs[d].generator(1, 0)
     setQuestions([q])
     setAnswers([])
     setSecondsLeft(domainConfigs[d].time)
     startTsRef.current = Date.now()
   }
 
-  // start a domain with an optional subtype (used by extended tests)
   function startSubtest(d, subtype){
     setDomain(d)
     setSubtype(subtype)
@@ -54,7 +51,6 @@ export default function Screening(){
     setQuestionIndex(0)
     const q = domainConfigs[d].generator(1, 0, subtype)
     if (!q) {
-      // fallback default question to avoid runtime errors
       const fallback = { localId: `fallback-${Date.now()}`, questionType: d, questionText: 'Error generating question — try again', options: [{ text: 'OK' }], correctAnswer: null, difficulty: 1 }
       setQuestions([fallback])
     } else {
@@ -82,7 +78,6 @@ export default function Screening(){
     return ()=> clearInterval(timerRef.current)
   }, [phase, domain, questionIndex])
 
-  // play speech for questions that include speechText (spoken-number tasks)
   useEffect(() => {
     if(phase !== 'running') return
     const q = questions[questionIndex]
@@ -91,13 +86,10 @@ export default function Screening(){
         const utter = new SpeechSynthesisUtterance(q.speechText)
         window.speechSynthesis.cancel()
         window.speechSynthesis.speak(utter)
-      }catch(e){
-        // ignore TTS errors
-      }
+      }catch(e){}
     }
   }, [phase, questionIndex, questions])
 
-  // manual play control for speech items (useful when autoplay is blocked)
   const playSpeech = (text) => {
     const t = text || (questions[questionIndex] && questions[questionIndex].speechText)
     if(!t || typeof window === 'undefined' || !window.speechSynthesis) return
@@ -105,9 +97,7 @@ export default function Screening(){
       const utter = new SpeechSynthesisUtterance(t)
       window.speechSynthesis.cancel()
       window.speechSynthesis.speak(utter)
-    }catch(e){
-      // ignore
-    }
+    }catch(e){}
   }
 
   const handleTimeout = () => {
@@ -121,7 +111,6 @@ export default function Screening(){
 
   const selectInternal = (opt, responseTime) => {
     setAnswers(a => [...a, { questionId: questions[questionIndex].localId, selected: opt, responseTime }])
-
     const wasCorrect = opt !== null && String(opt) === String(questions[questionIndex].correctAnswer)
     let nextDifficulty = Math.min(5, Math.max(1, questions[questionIndex].difficulty + (wasCorrect ? 1 : -1)))
 
@@ -131,7 +120,6 @@ export default function Screening(){
       setQuestionIndex(i => i+1)
       startTsRef.current = Date.now()
     } else {
-      // subtest finished
       setPhase('review')
     }
   }
@@ -140,23 +128,19 @@ export default function Screening(){
     setSubmitting(true)
     setError('')
     try{
-      // start assessment on backend with only this domain's questions
       const questionsPayload = questions.map(q => ({
         questionType: q.questionType,
         questionText: q.questionText,
         options: (q.options||[]).map(o => ({ text: String(o.text||o), image: o.image||'', isCorrect: !!o.isCorrect })),
         correctAnswer: q.correctAnswer,
         difficulty: q.difficulty,
-        // preserve subtype metadata (either defined on question or inherited from the running subtest)
         subtype: q.subtype ?? subtype ?? null,
-        // preserve any small metadata useful for results UI
         images: q.images ?? []
       }))
       const startRes = await client.post('/api/assessments/start', { userId: getUser()?._id, questions: questionsPayload })
       const assessment = startRes.data
       const mappedAnswers = answers.map((a, idx) => ({ questionId: assessment.questions[idx]?._id || null, selectedAnswer: a.selected, responseTime: a.responseTime || 0 }))
       await client.post('/api/assessments/submit', { assessmentId: assessment._id, answers: mappedAnswers })
-      // navigate to results which will include this new assessment
       navigate('/results')
     }catch(err){
       setError(err.response?.data?.message || 'Failed to submit subtest')
@@ -169,8 +153,8 @@ export default function Screening(){
     <div className="min-h-screen p-6 flex items-start justify-center">
       <div className="max-w-4xl w-full kid-card">
         <div className="p-4">
-          <h2 className="text-2xl font-bold mb-2">Screening & Short Assessments</h2>
-          <p className="text-sm text-gray-600 mb-4">Quick adaptive screening across multiple domains. Designed to be language-neutral and game-like.</p>
+          <h2 className="text-2xl font-bold mb-2 text-black">Screening & Short Assessments</h2>
+          <p className="text-black text-sm mb-4">Quick adaptive screening across multiple domains. Designed to be language-neutral and game-like.</p>
 
           {error && <ErrorBanner message={error} onClose={() => setError('')} />}
 
@@ -181,8 +165,8 @@ export default function Screening(){
                   <div key={k} className="p-4 bg-white rounded-xl shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-lg font-semibold">{domainConfigs[k].label}</div>
-                        <div className="text-xs text-gray-500 mt-1">Short {domainConfigs[k].label} screening — {SUBTEST_QUESTIONS} questions</div>
+                        <div className="text-lg font-semibold text-black">{domainConfigs[k].label}</div>
+                        <div className="text-xs mt-1 text-black">Short {domainConfigs[k].label} screening — {SUBTEST_QUESTIONS} questions</div>
                       </div>
                       <div>
                         <button onClick={() => startDomain(k)} className="px-3 py-1 rounded-md bg-primary text-white">Start</button>
@@ -192,24 +176,16 @@ export default function Screening(){
                 ))}
               </div>
 
-              {/* New interactive symbol-quantity / transcoding section */}
               <div className="p-4 bg-white rounded-xl shadow-sm mb-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-lg font-semibold">Symbol–Quantity & Transcoding (Interactive)</div>
-                    <div className="text-xs text-gray-500 mt-1">Interactive tasks: spoken-word mapping, picture-to-number, and numeral reading/writing.</div>
+                    <div className="text-lg font-semibold text-black">Symbol–Quantity & Transcoding (Interactive)</div>
+                    <div className="text-xs mt-1 text-black">Interactive tasks: spoken-word mapping, picture-to-number, and numeral reading/writing.</div>
                   </div>
                   <div>
                     <button onClick={() => startSubtest('number_sense','symbol_quantity')} className="px-3 py-1 rounded-md bg-primary text-white">Start Test</button>
                   </div>
                 </div>
-                {/* <div className="mt-3 text-sm text-gray-700">
-                  <ul className="list-disc pl-5">
-                    <li>Mapping spoken number words to Arabic numerals and vice versa (audio).</li>
-                    <li>Number–quantity assignment using concrete pictures (tap the correct count).</li>
-                    <li>Reading and writing Arabic numerals quickly and accurately (multi‑digit & place value).</li>
-                  </ul>
-                </div> */}
               </div>
             </div>
           )}
@@ -217,18 +193,16 @@ export default function Screening(){
           {phase === 'running' && (
             <div>
               <div className="flex items-center justify-between mb-3">
-                <div className="text-lg font-semibold">{domainConfigs[domain].label}</div>
-                <div className="text-sm text-gray-500">Question {questionIndex+1} of {SUBTEST_QUESTIONS} • Time left: {secondsLeft}s</div>
+                <div className="text-lg font-semibold text-black">{domainConfigs[domain].label}</div>
+                <div className="text-sm text-black">Question {questionIndex+1} of {SUBTEST_QUESTIONS} • Time left: {secondsLeft}s</div>
               </div>
               <div className="p-4 bg-gradient-to-r from-white to-soft rounded-2xl">
                 <div className="mb-2 flex items-center gap-3">
-                  <div className="text-xl flex-1">{questions[questionIndex]?.questionText}</div>
+                  <div className="text-xl flex-1 text-black">{questions[questionIndex]?.questionText}</div>
                   {questions[questionIndex]?.speechText && (
                     <button onClick={() => playSpeech()} aria-label="Play audio" className="px-3 py-1 rounded-md border bg-white text-sm">Play</button>
                   )}
                 </div>
-                {/* play spoken text if present (speech handled in effect) */}
-                {/* render images if question includes images */}
                 {questions[questionIndex]?.images && (
                   <div className="mb-3 flex flex-wrap gap-2">
                     {questions[questionIndex].images.map((src, i) => (
@@ -247,7 +221,7 @@ export default function Screening(){
 
           {phase === 'review' && (
             <div className="mt-4">
-              <div className="text-sm text-gray-600 mb-3">Review your answers and submit this short screening so results can be saved.</div>
+              <div className="text-sm text-black mb-3">Review your answers and submit this short screening so results can be saved.</div>
               <div className="space-y-2">
                 {questions.map((q, i) => {
                   const a = answers[i]
@@ -256,8 +230,8 @@ export default function Screening(){
                   return (
                     <div key={q.localId} className="p-3 bg-white rounded-md flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-medium">{q.questionText}</div>
-                        <div className="text-xs text-gray-500">Your answer: <strong>{selected ?? '—'}</strong> • Correct: <strong>{correct}</strong></div>
+                        <div className="text-sm font-medium text-black">{q.questionText}</div>
+                        <div className="text-xs text-black">Your answer: <strong>{selected ?? '—'}</strong> • Correct: <strong>{correct}</strong></div>
                       </div>
                       <div>
                         <div className={`px-2 py-1 rounded ${String(selected) === correct ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{String(selected) === correct ? 'Correct' : 'Incorrect'}</div>
@@ -278,6 +252,8 @@ export default function Screening(){
     </div>
   )
 }
+
+// --- domain generators remain unchanged ---
 
 // --- generators for each domain ---
 function genNumberSense(difficulty = 1, idx = 0, subtype){
