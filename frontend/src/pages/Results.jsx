@@ -32,14 +32,30 @@ export default function Results() {
         const match = cd.match(/filename="?([^";]+)"?/) || cd.match(/filename=([^;]+)/)
         if (match) filename = match[1]
       }
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = filename
-      document.body.appendChild(a)
-      a.click()
-      a.remove()
-      window.URL.revokeObjectURL(url)
+
+      // Mobile-friendly download
+      if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) {
+        const reader = new FileReader()
+        reader.onload = function (e) {
+          const link = document.createElement('a')
+          link.href = e.target.result
+          link.download = filename
+          document.body.appendChild(link)
+          link.click()
+          link.remove()
+        }
+        reader.readAsDataURL(blob)
+      } else {
+        // desktop
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        window.URL.revokeObjectURL(url)
+      }
     } catch (err) {
       console.error('Failed to download CSV', err)
       setError(err.response?.data?.message || 'Failed to download CSV')
