@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root{
+  --bg:#fffbf7;
+  --card:#ffffff;
+  --muted:#6b7280;
+}
+
+body{
+  @apply bg-gradient-to-b from-soft to-white; 
+  font-family: 'Nunito', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
+/* Kid friendly card */
+.kid-card{
+  @apply bg-white rounded-3xl shadow-lg p-6;
+}
+
+.header-title{
+  @apply text-3xl font-bold text-primary mb-2;
+}
+
+.small-muted{
+  @apply text-sm text-gray-600;
+}
