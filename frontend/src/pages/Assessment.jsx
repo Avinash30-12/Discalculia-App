@@ -31,7 +31,7 @@ export default function Assessment() {
     return () => clearInterval(timerRef.current)
   }, [])
 
-  /* ================= TIMER (SAFE) ================= */
+  /* ================= TIMER ================= */
   useEffect(() => {
     if (!current) return
 
@@ -104,7 +104,6 @@ export default function Assessment() {
     setSubmitting(true)
 
     try {
-      // Frontend safety validation
       questions.forEach((q, i) => {
         if (!q.questionType) {
           throw new Error(`Question ${i} missing questionType`)
@@ -148,32 +147,29 @@ export default function Assessment() {
 
   /* ================= UI ================= */
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
-      <div className="max-w-3xl w-full bg-white rounded-2xl p-5 shadow-sm">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50 text-black">
+      <div className="max-w-3xl w-full bg-white rounded-2xl p-5 shadow-sm text-black">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Assessment</h2>
-          <span className="text-sm text-gray-700">
+          <h2 className="text-2xl font-bold text-black">Assessment</h2>
+          <span className="text-sm text-black">
             Q {questionIndex + 1}/{TOTAL_QUESTIONS}
           </span>
         </div>
 
         {error && <ErrorBanner message={error} />}
 
-        <div className="mb-3 text-lg font-medium">
+        <div className="mb-3 text-lg font-medium text-black">
           {current?.questionText}
         </div>
 
-        <div className="text-sm mb-4 text-gray-700">
+        <div className="text-sm mb-4 text-black">
           Difficulty: {current?.difficulty} | ⏱ {secondsLeft}s
         </div>
 
         {current?.dots && (
           <div className="flex gap-2 flex-wrap mb-4">
             {Array.from({ length: current.dots }).map((_, i) => (
-              <div
-                key={i}
-                className="w-5 h-5 bg-blue-500 rounded-full"
-              />
+              <div key={i} className="w-5 h-5 bg-blue-500 rounded-full" />
             ))}
           </div>
         )}
@@ -181,10 +177,7 @@ export default function Assessment() {
         {current?.shapes && (
           <div className="flex gap-4 mb-4">
             {current.shapes.map((s, i) => (
-              <div
-                key={i}
-                className={`w-12 h-12 ${s.color} ${s.shape}`}
-              />
+              <div key={i} className={`w-12 h-12 ${s.color} ${s.shape}`} />
             ))}
           </div>
         )}
@@ -206,7 +199,7 @@ export default function Assessment() {
               key={i}
               onClick={() => select(opt.text)}
               disabled={submitting}
-              className="py-3 px-4 rounded-xl border-2 border-gray-300 font-medium hover:border-primary hover:bg-primary/10 transition"
+              className="py-3 px-4 rounded-xl border-2 border-gray-300 font-medium text-black hover:border-primary hover:bg-primary/10 transition"
             >
               {submitting ? <LoadingSpinner size={18} /> : opt.text}
             </button>
@@ -314,7 +307,6 @@ function build(text, correct, difficulty, idx, questionType) {
   }
 }
 
-/* SAFE OPTIONS GENERATOR (NO INFINITE LOOP) */
 function generateOptions(correct) {
   if (!isNaN(Number(correct))) {
     const set = new Set([String(correct)])
