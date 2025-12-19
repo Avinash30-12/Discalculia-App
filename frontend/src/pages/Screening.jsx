@@ -211,10 +211,18 @@ export default function Screening(){
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
-                  {(questions[questionIndex]?.options || []).map((opt, i) => (
-                    <button key={i} onClick={() => select(opt.text ?? opt)} className="py-3 px-4 bg-primary/10 rounded-xl border-2 border-transparent hover:border-primary" disabled={submitting}>{opt.text ?? opt}</button>
-                  ))}
-                </div>
+  {(questions[questionIndex]?.options || []).map((opt, i) => (
+    <button
+      key={i}
+      onClick={() => select(opt.text ?? opt)}
+      className="py-3 px-4 bg-primary/10 rounded-xl border-2 border-transparent hover:border-primary text-black"
+      disabled={submitting}
+    >
+      {opt.text ?? opt}
+    </button>
+  ))}
+</div>
+
               </div>
             </div>
           )}
