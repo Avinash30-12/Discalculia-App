@@ -21,48 +21,50 @@ export default function Results() {
     })()
   }, [])
 
-  const downloadCSV = async () => {
-    setCsvLoading(true)
-    try {
-      const res = await client.get('/api/assessments/export', { responseType: 'blob' })
-      const blob = new Blob([res.data], { type: 'text/csv' })
-      let filename = 'assessment_results.csv'
-      const cd = res.headers?.['content-disposition'] || res.headers?.['Content-Disposition']
-      if (cd) {
-        const match = cd.match(/filename="?([^";]+)"?/) || cd.match(/filename=([^;]+)/)
-        if (match) filename = match[1]
-      }
-
-      // Mobile-friendly download
-      if (navigator.userAgent.match(/iPhone|iPad|iPod|Android/i)) {
-        const reader = new FileReader()
-        reader.onload = function (e) {
-          const link = document.createElement('a')
-          link.href = e.target.result
-          link.download = filename
-          document.body.appendChild(link)
-          link.click()
-          link.remove()
-        }
-        reader.readAsDataURL(blob)
-      } else {
-        // desktop
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        window.URL.revokeObjectURL(url)
-      }
-    } catch (err) {
-      console.error('Failed to download CSV', err)
-      setError(err.response?.data?.message || 'Failed to download CSV')
-    } finally {
-      setCsvLoading(false)
+ const downloadCSV = async () => {
+  setCsvLoading(true)
+  try {
+    const res = await client.get('/api/assessments/export', { responseType: 'blob' })
+    const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8' })
+    let filename = 'assessment_results.csv'
+    const cd = res.headers?.['content-disposition'] || res.headers?.['Content-Disposition']
+    if (cd) {
+      const match = cd.match(/filename="?([^";]+)"?/) || cd.match(/filename=([^;]+)/)
+      if (match) filename = match[1]
     }
+
+    // Mobile-friendly download
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+    if (isMobile) {
+      const reader = new FileReader()
+      reader.onload = function (e) {
+        const link = document.createElement('a')
+        link.href = e.target.result
+        link.setAttribute('download', filename)
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+      }
+      reader.readAsDataURL(blob)
+    } else {
+      // Desktop
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.setAttribute('download', filename)
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      window.URL.revokeObjectURL(url)
+    }
+  } catch (err) {
+    console.error('Failed to download CSV', err)
+    setError(err.response?.data?.message || 'Failed to download CSV')
+  } finally {
+    setCsvLoading(false)
   }
+}
+
 
   if (!results && !error) return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gray-50">
